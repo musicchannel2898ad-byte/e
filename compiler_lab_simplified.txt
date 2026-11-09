@@ -1,0 +1,529 @@
+COMPILER DESIGN LAB - SIMPLIFIED PROGRAMS
+(Each "#####" line is a file name. Save the code under it with that name.)
+
+SETUP:
+sudo apt update
+sudo apt install flex bison gcc
+
+C PROGRAMS:        gcc prog.c -o prog && ./prog
+LEX PROGRAMS:      flex prog.l && gcc lex.yy.c -o prog && ./prog
+LEX + YACC:        yacc -d prog.y && flex prog.l && gcc y.tab.c lex.yy.c -o prog && ./prog
+(%option noyywrap is used, so -lfl is not needed. Press Ctrl+D to end input for lex programs.)
+
+
+=== 1. Lex: vowels and consonants ===
+##### p1.l
+%option noyywrap
+%{
+#include <stdio.h>
+#include <string.h>
+int isvowel(char c) { return strchr("aeiouAEIOU", c) != NULL; }
+%}
+%%
+[a-zA-Z]  { printf("%c : %s\n", yytext[0], isvowel(yytext[0]) ? "Vowel" : "Consonant"); }
+.|\n      ;
+%%
+int main() { yylex(); return 0; }
+
+
+=== 2. Lex: nouns and verbs ===
+##### p2.l
+%option noyywrap
+%{
+#include <stdio.h>
+#include <string.h>
+char *nouns[] = {"boy", "girl", "book", "Ram"};
+char *verbs[] = {"run", "eat", "play", "write"};
+int in(char *list[], int n, char *w) {
+    for (int i = 0; i < n; i++)
+        if (strcmp(list[i], w) == 0) return 1;
+    return 0;
+}
+%}
+%%
+[a-zA-Z]+  { printf("%s : %s\n", yytext,
+             in(nouns, 4, yytext) ? "Noun" : in(verbs, 4, yytext) ? "Verb" : "Other"); }
+.|\n       ;
+%%
+int main() { yylex(); return 0; }
+
+
+=== 3. Lex: reserved words and identifiers ===
+##### p3.l
+%option noyywrap
+%{
+#include <stdio.h>
+#include <string.h>
+char *kw[] = {"int", "float", "if", "else", "while"};
+int iskeyword(char *w) {
+    for (int i = 0; i < 5; i++)
+        if (strcmp(kw[i], w) == 0) return 1;
+    return 0;
+}
+%}
+%%
+[a-zA-Z_][a-zA-Z0-9_]*  { printf("%s : %s\n", yytext, iskeyword(yytext) ? "Reserved word" : "Identifier"); }
+.|\n                    ;
+%%
+int main() { yylex(); return 0; }
+
+
+=== 4. Lex: uppercase letters in a file (create input.txt first) ===
+##### p4.l
+%option noyywrap
+%{
+#include <stdio.h>
+char found[1000];
+int n = 0;
+%}
+%%
+[A-Z]   { if (n < 999) found[n++] = yytext[0]; }
+.|\n    ;
+%%
+int main() {
+    yyin = fopen("input.txt", "r");
+    if (!yyin) { printf("input.txt not found\n"); return 1; }
+    yylex();
+    printf("Uppercase letters: %s (count = %d)\n", found, n);
+    return 0;
+}
+
+
+=== 5. Lex: count vowels and consonants in a file (create input.txt first) ===
+##### p5.l
+%option noyywrap
+%{
+#include <stdio.h>
+#include <string.h>
+int v = 0, c = 0;
+int isvowel(char ch) { return strchr("aeiouAEIOU", ch) != NULL; }
+%}
+%%
+[a-zA-Z]  { if (isvowel(yytext[0])) v++; else c++; }
+.|\n      ;
+%%
+int main() {
+    yyin = fopen("input.txt", "r");
+    if (!yyin) { printf("input.txt not found\n"); return 1; }
+    yylex();
+    printf("Vowels = %d\nConsonants = %d\n", v, c);
+    return 0;
+}
+
+
+=== 6. Lex: count words, special characters and lines (create input.txt first) ===
+##### p6.l
+%option noyywrap
+%{
+#include <stdio.h>
+int words = 0, lines = 0, special = 0;
+%}
+%%
+[A-Za-z0-9_]+        { words++; }
+\n                   { lines++; }
+[^A-Za-z0-9_ \t\n]   { special++; }
+.                    ;
+%%
+int main() {
+    yyin = fopen("input.txt", "r");
+    if (!yyin) { printf("input.txt not found\n"); return 1; }
+    yylex();
+    printf("Words = %d\nSpecial characters = %d\nLines = %d\n", words, special, lines);
+    return 0;
+}
+
+
+=== 7. Lexical analyzer using Lex ===
+##### p7.l
+%option noyywrap
+%{
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+char *kw[] = {"int", "float", "if", "else", "while"};
+char *kind(char *t) {
+    if (isdigit(t[0])) return "Number";
+    if (isalpha(t[0]) || t[0] == '_') {
+        for (int i = 0; i < 5; i++)
+            if (strcmp(kw[i], t) == 0) return "Keyword";
+        return "Identifier";
+    }
+    return "Operator";
+}
+%}
+%%
+[0-9]+|[a-zA-Z_][a-zA-Z0-9_]*|[+\-*/=<>]  { printf("%s : %s\n", yytext, kind(yytext)); }
+.|\n                                      ;
+%%
+int main() { yylex(); return 0; }
+
+
+=== 8. Lex: arithmetic operations (input like 12+3 or 12 * 3) ===
+##### p8.l
+%option noyywrap
+%{
+#include <stdio.h>
+int calc(int a, char op, int b) {
+    if (op == '+') return a + b;
+    if (op == '-') return a - b;
+    if (op == '*') return a * b;
+    return a / b;
+}
+%}
+%%
+[0-9]+[ ]*[+\-*/][ ]*[0-9]+  {
+    int a, b;
+    char op;
+    sscanf(yytext, "%d %c %d", &a, &op, &b);
+    if (op == '/' && b == 0) printf("Cannot divide by zero\n");
+    else printf("Result = %d\n", calc(a, op, b));
+}
+.|\n  ;
+%%
+int main() { yylex(); return 0; }
+
+
+=== 9. YACC: valid variable (letter followed by letters or digits) ===
+##### p9.l
+%option noyywrap
+%{
+#include "y.tab.h"
+%}
+%%
+[a-zA-Z][a-zA-Z0-9]*  { return VALID; }
+\n                    { return 0; }
+.                     { return INVALID; }
+%%
+
+##### p9.y
+%{
+#include <stdio.h>
+int yylex();
+void yyerror(const char *s) {}
+%}
+%token VALID INVALID
+%%
+S : VALID ;
+%%
+int main() {
+    printf("Enter variable: ");
+    puts(yyparse() == 0 ? "Valid variable" : "Invalid variable");
+    return 0;
+}
+
+
+=== 10 and 11. YACC: calculator / evaluate algebraic expression (same program) ===
+##### p10.l
+%option noyywrap
+%{
+#include <stdlib.h>
+#include "y.tab.h"
+%}
+%%
+[0-9]+  { yylval = atoi(yytext); return NUM; }
+[ \t]   ;
+\n      { return 0; }
+.       { return yytext[0]; }
+%%
+
+##### p10.y
+%{
+#include <stdio.h>
+int yylex();
+void yyerror(const char *s) {}
+int result = 0, err = 0;
+int divide(int a, int b) {
+    if (b == 0) { err = 1; return 0; }
+    return a / b;
+}
+%}
+%token NUM
+%left '+' '-'
+%left '*' '/'
+%%
+S : E { result = $1; } ;
+E : E '+' E   { $$ = $1 + $3; }
+  | E '-' E   { $$ = $1 - $3; }
+  | E '*' E   { $$ = $1 * $3; }
+  | E '/' E   { $$ = divide($1, $3); }
+  | '(' E ')' { $$ = $2; }
+  | NUM
+  ;
+%%
+int main() {
+    printf("Enter expression: ");
+    if (yyparse() != 0) printf("Invalid expression\n");
+    else if (err)       printf("Cannot divide by zero\n");
+    else                printf("Result = %d\n", result);
+    return 0;
+}
+
+
+=== 12. YACC: parser for S -> aAb, A -> cA | d ===
+##### p12.l
+%option noyywrap
+%%
+\n  { return 0; }
+.   { return yytext[0]; }
+%%
+
+##### p12.y
+%{
+#include <stdio.h>
+int yylex();
+void yyerror(const char *s) {}
+%}
+%%
+S : 'a' A 'b' ;
+A : 'c' A | 'd' ;
+%%
+int main() {
+    printf("Enter string: ");
+    puts(yyparse() == 0 ? "Valid string" : "Invalid string");
+    return 0;
+}
+
+
+=== 13. Recursive descent parser: E -> E+T | T, T -> T*F | F, F -> (E) | id ===
+(left recursion removed using loops; id = a single letter)
+##### p13.c
+#include <stdio.h>
+#include <ctype.h>
+
+char s[50];
+int i = 0;
+int E();
+
+int F() {
+    if (s[i] == '(') {
+        i++;
+        if (!E() || s[i] != ')') return 0;
+        i++;
+        return 1;
+    }
+    if (isalpha(s[i])) { i++; return 1; }
+    return 0;
+}
+
+int T() {
+    if (!F()) return 0;
+    while (s[i] == '*') {
+        i++;
+        if (!F()) return 0;
+    }
+    return 1;
+}
+
+int E() {
+    if (!T()) return 0;
+    while (s[i] == '+') {
+        i++;
+        if (!T()) return 0;
+    }
+    return 1;
+}
+
+int main() {
+    printf("Enter expression: ");
+    scanf("%49s", s);
+    puts(E() && s[i] == '\0' ? "Valid" : "Invalid");
+    return 0;
+}
+
+
+=== 14. Recursive descent parser: S -> a | (L), L -> L,S | S ===
+##### p14.c
+#include <stdio.h>
+
+char s[50];
+int i = 0;
+int L();
+
+int S() {
+    if (s[i] == 'a') { i++; return 1; }
+    if (s[i] == '(') {
+        i++;
+        if (!L() || s[i] != ')') return 0;
+        i++;
+        return 1;
+    }
+    return 0;
+}
+
+int L() {
+    if (!S()) return 0;
+    while (s[i] == ',') {
+        i++;
+        if (!S()) return 0;
+    }
+    return 1;
+}
+
+int main() {
+    printf("Enter string: ");
+    scanf("%49s", s);
+    puts(S() && s[i] == '\0' ? "Valid" : "Invalid");
+    return 0;
+}
+
+
+=== 15. Stack storage allocation ===
+##### p15.c
+#include <stdio.h>
+#define MAX 5
+
+int stack[MAX], top = -1;
+
+int push(int x) {
+    if (top == MAX - 1) return 0;
+    stack[++top] = x;
+    return 1;
+}
+
+int pop() {
+    if (top == -1) return 0;
+    top--;
+    return 1;
+}
+
+int main() {
+    int ch, x, i;
+    while (1) {
+        printf("\n1.Push 2.Pop 3.Display 4.Exit: ");
+        scanf("%d", &ch);
+        if (ch == 1) {
+            printf("Value: ");
+            scanf("%d", &x);
+            puts(push(x) ? "Pushed" : "Stack overflow");
+        } else if (ch == 2) {
+            if (pop()) printf("Popped %d\n", stack[top + 1]);
+            else       puts("Stack underflow");
+        } else if (ch == 3) {
+            for (i = top; i >= 0; i--) printf("%d\n", stack[i]);
+        } else break;
+    }
+    return 0;
+}
+
+
+=== 16. Symbol table (the lexical analyzer part is program 7) ===
+##### p16.c
+#include <stdio.h>
+#include <string.h>
+
+char name[20][20], type[20][20];
+int n = 0;
+
+int find(char *s) {
+    for (int i = 0; i < n; i++)
+        if (strcmp(name[i], s) == 0) return i;
+    return -1;
+}
+
+int insert(char *s, char *t) {
+    if (find(s) != -1 || n == 20) return 0;
+    strcpy(name[n], s);
+    strcpy(type[n], t);
+    n++;
+    return 1;
+}
+
+int main() {
+    int ch, i;
+    char s[20], t[20];
+    while (1) {
+        printf("\n1.Insert 2.Search 3.Display 4.Exit: ");
+        scanf("%d", &ch);
+        if (ch == 1) {
+            printf("Name and type: ");
+            scanf("%19s %19s", s, t);
+            puts(insert(s, t) ? "Inserted" : "Already declared or table full");
+        } else if (ch == 2) {
+            printf("Name: ");
+            scanf("%19s", s);
+            i = find(s);
+            if (i == -1) puts("Not found");
+            else printf("Found: %s %s\n", type[i], name[i]);
+        } else if (ch == 3) {
+            for (i = 0; i < n; i++) printf("%d  %s  %s\n", i, name[i], type[i]);
+        } else break;
+    }
+    return 0;
+}
+
+
+=== 17. FIRST function ===
+(Input: number of productions, then one per line like E=TA, A=+TA, A=#   where # = epsilon.
+ Assumes the first symbol of each production decides FIRST.)
+##### p17.c
+#include <stdio.h>
+#include <ctype.h>
+
+char lhs[20], rhs[20][10];
+int n, set[128], vis[128];
+
+void first(char c) {
+    if (!isupper(c)) { set[(int)c] = 1; return; }
+    if (vis[(int)c]) return;
+    vis[(int)c] = 1;
+    for (int i = 0; i < n; i++)
+        if (lhs[i] == c) first(rhs[i][0]);
+}
+
+int main() {
+    int i, j, c;
+    scanf("%d", &n);
+    for (i = 0; i < n; i++) scanf(" %c=%9s", &lhs[i], rhs[i]);
+
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < i && lhs[j] != lhs[i]; j++);
+        if (j < i) continue;                      /* already printed */
+        for (c = 0; c < 128; c++) set[c] = vis[c] = 0;
+        first(lhs[i]);
+        printf("FIRST(%c) = {", lhs[i]);
+        for (c = 0; c < 128; c++)
+            if (set[c]) printf(" %c", c);
+        printf(" }\n");
+    }
+    return 0;
+}
+
+
+=== 18. Three address code ===
+(Single-letter operands, operators + - * /, no brackets. Example: a+b*c-d)
+##### p18.c
+#include <stdio.h>
+#include <string.h>
+
+char a[20][10], op[20];
+int n, t = 1;
+
+/* combine every operator found in ops (left to right) into a temporary */
+void reduce(char *ops) {
+    for (int i = 0; i < n;) {
+        if (strchr(ops, op[i])) {
+            printf("t%d = %s %c %s\n", t, a[i], op[i], a[i + 1]);
+            sprintf(a[i], "t%d", t++);
+            for (int j = i; j < n - 1; j++) {
+                strcpy(a[j + 1], a[j + 2]);
+                op[j] = op[j + 1];
+            }
+            n--;
+        } else i++;
+    }
+}
+
+int main() {
+    char s[40];
+    int i;
+    printf("Enter expression: ");
+    scanf("%39s", s);
+    for (i = 0; s[i]; i++) {
+        if (i % 2 == 0) { a[i / 2][0] = s[i]; a[i / 2][1] = '\0'; }
+        else op[i / 2] = s[i];
+    }
+    n = i / 2;
+    reduce("*/");
+    reduce("+-");
+    return 0;
+}

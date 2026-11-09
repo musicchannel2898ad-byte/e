@@ -1,0 +1,276 @@
+COMPILER DESIGN LAB - SAMPLE INPUT AND OUTPUT
+(Every output below was produced by compiling and running the programs in compiler_lab_simplified.txt.)
+(Typed input is not echoed by the terminal, so each prompt is followed directly by its output.)
+
+Programs 4, 5, 6 read input.txt, which contained:
+----------------------------------------
+Hello World
+Compilers are FUN!
+Total: 3 lines; ok
+----------------------------------------
+
+============================================================
+1. Lex: vowels and consonants
+============================================================
+Input:
+    hi 2u
+Output:
+    h : Consonant
+    i : Vowel
+    u : Vowel
+
+============================================================
+2. Lex: nouns and verbs
+============================================================
+Input:
+    boy run xyz
+Output:
+    boy : Noun
+    run : Verb
+    xyz : Other
+
+Input:
+    Ram eat book
+Output:
+    Ram : Noun
+    eat : Verb
+    book : Noun
+
+============================================================
+3. Lex: reserved words and identifiers
+============================================================
+Input:
+    int x1 = 5; while y
+Output:
+    int : Reserved word
+    x1 : Identifier
+    while : Reserved word
+    y : Identifier
+
+============================================================
+4. Lex: uppercase letters in a file
+============================================================
+Input: (contents of input.txt, shown above)
+Output:
+    Uppercase letters: HWCFUNT (count = 7)
+
+============================================================
+5. Lex: count vowels and consonants in a file
+============================================================
+Input: (contents of input.txt, shown above)
+Output:
+    Vowels = 14
+    Consonants = 23
+
+============================================================
+6. Lex: count words, special characters and lines
+============================================================
+Input: (contents of input.txt, shown above)
+Output:
+    Words = 9
+    Special characters = 3
+    Lines = 3
+
+============================================================
+7. Lexical analyzer using Lex
+============================================================
+Input:
+    int a = b9 + 12;
+Output:
+    int : Keyword
+    a : Identifier
+    = : Operator
+    b9 : Identifier
+    + : Operator
+    12 : Number
+
+============================================================
+8. Lex: arithmetic operations
+============================================================
+Input:
+    12+3
+    12 * 3
+    8/0
+Output:
+    Result = 15
+    Result = 36
+    Cannot divide by zero
+
+============================================================
+9. YACC: valid variable
+============================================================
+Input:
+    abc1
+Output:
+    Enter variable: Valid variable
+
+Input:
+    9ab
+Output:
+    Enter variable: Invalid variable
+
+Input:
+    a b
+Output:
+    Enter variable: Invalid variable
+
+============================================================
+10 & 11. YACC: calculator / expression evaluation
+============================================================
+Input:
+    2+3*4
+Output:
+    Enter expression: Result = 14
+
+Input:
+    (2+3)*4
+Output:
+    Enter expression: Result = 20
+
+Input:
+    8/0
+Output:
+    Enter expression: Cannot divide by zero
+
+Input:
+    2+
+Output:
+    Enter expression: Invalid expression
+
+============================================================
+12. YACC: S -> aAb, A -> cA | d
+============================================================
+Input:
+    adb
+Output:
+    Enter string: Valid string
+
+Input:
+    accdb
+Output:
+    Enter string: Valid string
+
+Input:
+    abd
+Output:
+    Enter string: Invalid string
+
+============================================================
+13. Recursive descent: E -> E+T | T ...
+============================================================
+Input:
+    a+b*(c+d)
+Output:
+    Enter expression: Valid
+
+Input:
+    a+*b
+Output:
+    Enter expression: Invalid
+
+============================================================
+14. Recursive descent: S -> a | (L) ...
+============================================================
+Input:
+    (a,(a,a))
+Output:
+    Enter string: Valid
+
+Input:
+    (a,)
+Output:
+    Enter string: Invalid
+
+============================================================
+15. Stack storage allocation
+============================================================
+Input:
+    1
+    10
+    1
+    20
+    3
+    2
+    2
+    2
+    4
+Output:
+    
+    1.Push 2.Pop 3.Display 4.Exit: Value: Pushed
+    
+    1.Push 2.Pop 3.Display 4.Exit: Value: Pushed
+    
+    1.Push 2.Pop 3.Display 4.Exit: 20
+    10
+    
+    1.Push 2.Pop 3.Display 4.Exit: Popped 20
+    
+    1.Push 2.Pop 3.Display 4.Exit: Popped 10
+    
+    1.Push 2.Pop 3.Display 4.Exit: Stack underflow
+    
+    1.Push 2.Pop 3.Display 4.Exit: 
+
+============================================================
+16. Symbol table
+============================================================
+Input:
+    1
+    x int
+    1
+    y float
+    1
+    x int
+    2
+    y
+    2
+    z
+    3
+    4
+Output:
+    
+    1.Insert 2.Search 3.Display 4.Exit: Name and type: Inserted
+    
+    1.Insert 2.Search 3.Display 4.Exit: Name and type: Inserted
+    
+    1.Insert 2.Search 3.Display 4.Exit: Name and type: Already declared or table full
+    
+    1.Insert 2.Search 3.Display 4.Exit: Name: Found: float y
+    
+    1.Insert 2.Search 3.Display 4.Exit: Name: Not found
+    
+    1.Insert 2.Search 3.Display 4.Exit: 0  x  int
+    1  y  float
+    
+    1.Insert 2.Search 3.Display 4.Exit: 
+
+============================================================
+17. FIRST function
+============================================================
+Input:
+    4
+    E=TA
+    A=+TA
+    A=#
+    T=a
+Output:
+    FIRST(E) = { a }
+    FIRST(A) = { # + }
+    FIRST(T) = { a }
+
+============================================================
+18. Three address code
+============================================================
+Input:
+    a+b*c-d
+Output:
+    Enter expression: t1 = b * c
+    t2 = a + t1
+    t3 = t2 - d
+
+Input:
+    a-b-c
+Output:
+    Enter expression: t1 = a - b
+    t2 = t1 - c
+
